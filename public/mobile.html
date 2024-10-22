@@ -34,18 +34,9 @@
                     resultElement.textContent = `QR Code detected: ${result.text}`;
                     console.log(result.text); // Process the scanned QR code here
 
-                    // Send session ID to the WebSocket server (for authentication)
-                    const ws = new WebSocket('ws://your-server-address:4001'); // Replace with your server address
-                    ws.onopen = () => {
-                        console.log("WebSocket connected");
-                        ws.send(result.text); // Send the scanned QR code to the server
-                    };
-                    ws.onmessage = (message) => {
-                        console.log('Message from server:', message.data);
-                        if (message.data === 'authenticated') {
-                            alert('You are authenticated on mobile!');
-                        }
-                    };
+                    // Redirect to Ayozat.com after scanning
+                    window.location.href = `https://ayozat.com?sessionId=${encodeURIComponent(result.text)}`;
+
                 }).catch(err => {
                     console.error('QR Code scan failed:', err);
                     resultElement.textContent = 'Failed to scan QR code or camera permission denied.';
