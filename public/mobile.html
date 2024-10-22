@@ -13,23 +13,32 @@
 
     <script src="https://unpkg.com/@zxing/library@latest"></script>
     <script>
-        window.addEventListener('load', function() {
+        window.addEventListener('load', async function() {
             const codeReader = new ZXing.BrowserQRCodeReader();
             const videoElement = document.getElementById('video');
             const resultElement = document.getElementById('result');
 
-            // Start the video stream and scan for QR codes
-            codeReader.getVideoInputDevices().then(videoInputDevices => {
-                const firstDeviceId = videoInputDevices[0].deviceId;
-                codeReader.decodeOnceFromVideoDevice(firstDeviceId, 'video').then(result => {
-                    resultElement.textContent = `QR Code detected: ${result.text}`;
-                    const sessionId = result.text;
+            try {
+                // Get all available video devices (cameras)
+                const videoInputDevices = await codeReader.getVideoInputDevices();
+                
+                if (videoInputDevices.length === 0) {
+                    throw new Error('No camera devices found.');
+                }
 
-                    // Send session ID to server for authentication via WebSocket
+                // Select the first available device or allow the user to choose
+                const selectedDeviceId = videoInputDevices.length > 1 ? videoInputDevices[1].deviceId : videoInputDevices[0].deviceId;
+
+                // Start the video stream from the selected device
+                await codeReader.decodeOnceFromVideoDevice(selectedDeviceId, 'video').then(result => {
+                    resultElement.textContent = `QR Code detected: ${result.text}`;
+                    console.log(result.text); // Process the scanned QR code here
+
+                    // Send session ID to the WebSocket server (for authentication)
                     const ws = new WebSocket('ws://your-server-address:4001'); // Replace with your server address
                     ws.onopen = () => {
                         console.log("WebSocket connected");
-                        ws.send(sessionId); // Send session ID to server
+                        ws.send(result.text); // Send the scanned QR code to the server
                     };
                     ws.onmessage = (message) => {
                         console.log('Message from server:', message.data);
@@ -38,10 +47,13 @@
                         }
                     };
                 }).catch(err => {
-                    console.error(err);
-                    resultElement.textContent = 'No QR code detected or camera permission denied';
+                    console.error('QR Code scan failed:', err);
+                    resultElement.textContent = 'Failed to scan QR code or camera permission denied.';
                 });
-            }).catch(err => console.error('Error accessing video devices: ', err));
+            } catch (err) {
+                console.error('Error accessing video devices: ', err);
+                resultElement.textContent = 'No QR code detected or camera permission denied';
+            }
         });
     </script>
 </body>
