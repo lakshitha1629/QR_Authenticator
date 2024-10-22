@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Scanner</title>
+</head>
+<body>
+    <h1>Scan QR Code</h1>
+    
+    <video id="video" style="width: 100%; height: auto;"></video>
+    <p id="result">No QR code detected yet</p>
+
+    <script src="https://unpkg.com/@zxing/library@latest"></script>
+    <script>
+        window.addEventListener('load', function() {
+            const codeReader = new ZXing.BrowserQRCodeReader();
+            const videoElement = document.getElementById('video');
+            const resultElement = document.getElementById('result');
+
+            // Start the video stream and scan for QR codes
+            codeReader.getVideoInputDevices().then(videoInputDevices => {
+                const firstDeviceId = videoInputDevices[0].deviceId;
+                codeReader.decodeOnceFromVideoDevice(firstDeviceId, 'video').then(result => {
+                    resultElement.textContent = `QR Code detected: ${result.text}`;
+                    console.log(result.text); // Process the scanned QR code here
+                }).catch(err => {
+                    console.error(err);
+                    resultElement.textContent = 'No QR code detected or camera permission denied';
+                });
+            }).catch(err => console.error('Error accessing video devices: ', err));
+        });
+    </script>
+</body>
+</html>
