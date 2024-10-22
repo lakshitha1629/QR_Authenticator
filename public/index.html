@@ -10,12 +10,24 @@
     <h1>Scan to Connect</h1>
     <canvas id="qrCode"></canvas>
     <script>
-        const sessionId = Math.random().toString(36).substring(2);
+        const sessionId = Math.random().toString(36).substring(2); // Generate random session ID
         QRCode.toCanvas(document.getElementById('qrCode'), sessionId, function (error) {
             if (error) console.error(error);
         });
-        const ws = new WebSocket('ws://138.68.129.50:4001');
-        ws.onopen = () => console.log("WebSocket connected");
+
+        const ws = new WebSocket('ws://your-server-address:4001'); // Replace with your server address
+        ws.onopen = () => {
+            console.log("WebSocket connected");
+            ws.send(sessionId); // Send session ID to server when WebSocket is connected
+        };
+        ws.onmessage = (message) => {
+            console.log('Message from server:', message.data);
+            if (message.data === 'authenticated') {
+                alert('You are authenticated!');
+                // Redirect the user to a new page
+                window.location.href = '/dashboard'; // Redirect after authentication
+            }
+        };
     </script>
 </body>
 </html>

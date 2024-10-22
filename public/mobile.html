@@ -23,7 +23,20 @@
                 const firstDeviceId = videoInputDevices[0].deviceId;
                 codeReader.decodeOnceFromVideoDevice(firstDeviceId, 'video').then(result => {
                     resultElement.textContent = `QR Code detected: ${result.text}`;
-                    console.log(result.text); // Process the scanned QR code here
+                    const sessionId = result.text;
+
+                    // Send session ID to server for authentication via WebSocket
+                    const ws = new WebSocket('ws://your-server-address:4001'); // Replace with your server address
+                    ws.onopen = () => {
+                        console.log("WebSocket connected");
+                        ws.send(sessionId); // Send session ID to server
+                    };
+                    ws.onmessage = (message) => {
+                        console.log('Message from server:', message.data);
+                        if (message.data === 'authenticated') {
+                            alert('You are authenticated on mobile!');
+                        }
+                    };
                 }).catch(err => {
                     console.error(err);
                     resultElement.textContent = 'No QR code detected or camera permission denied';
