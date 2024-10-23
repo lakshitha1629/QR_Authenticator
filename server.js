@@ -20,7 +20,7 @@ app.get('/dashboard', (req, res) => {
 
 // WebSocket server
 const server = app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running at http://localhost:${PORT}`);
+    console.log(`Server running at https://qr-authenticator.onrender.com:${PORT}`);
 });
 
 const wss = new WebSocket.Server({ server });
