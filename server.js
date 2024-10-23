@@ -1,6 +1,7 @@
 const express = require('express');
 const WebSocket = require('ws');
 const path = require('path');
+const axios = require('axios'); // For making API requests to your site's login API
 const app = express();
 const PORT = process.env.PORT || 4000;
 
@@ -25,20 +26,46 @@ const server = app.listen(PORT, '0.0.0.0', () => {
 const wss = new WebSocket.Server({ server });
 let validSessions = new Set();
 
+// Sample login code
+const loginUser = async (data) => {
+    const response = await axios({
+        method: "post",
+        data: data,
+        url: `https://dapi.ayozat.co.uk/api/auth/login`,  // Updated login URL
+        headers: {
+            "Content-Type": "application/json; charset=utf-8",
+        },
+    });
+    return response.data;
+};
+
 wss.on('connection', ws => {
     console.log('Client connected');
 
-    ws.on('message', message => {
-        console.log('Received message:', message);
+    ws.on('message', async (sessionId) => {
+        console.log('Received session ID:', sessionId);
 
-        // If a session ID is received, store it in validSessions
-        if (!validSessions.has(message)) {
-            validSessions.add(message); // Add session ID to valid sessions
-            console.log('Session ID stored:', message);
+        // Check if the session ID is valid and proceed with login
+        if (validSessions.has(sessionId)) {
+            try {
+                // Login using your API (replace credentials as needed)
+                const loginData = { sessionId }; // Adjust based on your backend's login expectations
+                const response = await loginUser(loginData);
+
+                if (response.success) {
+                    ws.send('authenticated'); // Notify the client that the user is authenticated
+                    console.log('User authenticated successfully with session ID:', sessionId);
+                } else {
+                    ws.send('unauthorized'); // Notify client if login failed
+                    console.log('Login failed for session ID:', sessionId);
+                }
+            } catch (error) {
+                console.error('Error logging in:', error);
+                ws.send('error');
+            }
         } else {
-            // If session ID matches, authenticate the user
-            ws.send('authenticated');
-            console.log('User authenticated with session ID:', message);
+            ws.send('invalid_session');
+            console.log('Invalid session ID:', sessionId);
         }
     });
 
