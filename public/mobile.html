@@ -32,7 +32,8 @@
                     console.log(result.text); // Process the scanned QR code here
 
                     // WebSocket connection to send session ID
-                    const ws = new WebSocket('ws://https://qr-authenticator.onrender.com:4001'); // Replace with your server address
+                    const ws = new WebSocket('wss://qr-authenticator.onrender.com:4001'); // Ensure secure WebSocket
+
                     ws.onopen = () => {
                         console.log("WebSocket connected");
                         ws.send(result.text); // Send session ID to server

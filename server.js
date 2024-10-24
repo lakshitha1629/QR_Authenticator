@@ -1,73 +1,62 @@
 const express = require('express');
 const WebSocket = require('ws');
 const path = require('path');
-const axios = require('axios'); // For making API requests to your site's login API
+const axios = require('axios');
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-// Serve static files from the 'public' directory
+// Serve static files
 app.use(express.static('public'));
 
-// Explicit route to serve mobile.html
+// Routes for serving HTML
 app.get('/mobile', (req, res) => {
     res.sendFile(path.join(__dirname, 'public/mobile.html'));
 });
-
-// Route for dashboard after successful authentication
 app.get('/dashboard', (req, res) => {
     res.send('<h1>Welcome to the Dashboard! You are authenticated.</h1>');
 });
 
-// WebSocket server
+// Start the server
 const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running at https://qr-authenticator.onrender.com:${PORT}`);
 });
 
+// WebSocket server
 const wss = new WebSocket.Server({ server });
+
+// Manage valid sessions
 let validSessions = new Set();
 
-// Sample login code
-const loginUser = async (data) => {
-    const response = await axios({
-        method: "post",
-        data: data,
-        url: `https://dapi.ayozat.co.uk/api/auth/login`,  // Updated login URL
-        headers: {
-            "Content-Type": "application/json; charset=utf-8",
-        },
-    });
-    return response.data;
+// Sample login logic (replace with actual authentication if needed)
+const loginUser = async (sessionId) => {
+    try {
+        const response = await axios.post(`https://dapi.ayozat.co.uk/api/auth/login`, { sessionId }, {
+            headers: { "Content-Type": "application/json" }
+        });
+        return response.data;  // Adjust based on actual API response
+    } catch (error) {
+        console.error('Login error:', error);
+        return null;
+    }
 };
 
 wss.on('connection', ws => {
-    console.log('Client connected');
+    console.log('Client connected via WebSocket');
 
     ws.on('message', async (sessionId) => {
-        console.log('Received session ID:', sessionId);
+        console.log('Session ID received:', sessionId);
 
-        // Check if the session ID is valid and proceed with login
         if (validSessions.has(sessionId)) {
-            try {
-                // Login using your API (replace credentials as needed)
-                const loginData = { sessionId }; // Adjust based on your backend's login expectations
-                const response = await loginUser(loginData);
-
-                if (response.success) {
-                    ws.send('authenticated'); // Notify the client that the user is authenticated
-                    console.log('User authenticated successfully with session ID:', sessionId);
-                } else {
-                    ws.send('unauthorized'); // Notify client if login failed
-                    console.log('Login failed for session ID:', sessionId);
-                }
-            } catch (error) {
-                console.error('Error logging in:', error);
-                ws.send('error');
+            const response = await loginUser(sessionId);
+            if (response && response.success) {
+                ws.send('authenticated');  // Notify client of successful login
+            } else {
+                ws.send('unauthorized');  // Notify client of failure
             }
         } else {
-            ws.send('invalid_session');
-            console.log('Invalid session ID:', sessionId);
+            ws.send('invalid_session');  // Notify client of invalid session
         }
     });
 
-    ws.on('close', () => console.log('Client disconnected'));
+    ws.on('close', () => console.log('WebSocket connection closed'));
 });
