@@ -3,79 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QR Code Connection - Ayozat</title>
-    <style>
-        body, html {
-            height: 100%;
-            margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-family: Arial, sans-serif;
-            background-color: #f5f5f5;
-        }
-        #container {
-            text-align: center;
-        }
-        #qrCode {
-            margin: 20px 0;
-        }
-        #status {
-            font-size: 18px;
-            color: #555;
-        }
-    </style>
+    <title>QR Code Connection</title>
     <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 </head>
 <body>
-    <div id="container">
-        <h1>Scan QR Code to Connect</h1>
-        <canvas id="qrCode"></canvas>
-        <p id="status">Waiting for connection...</p>
-    </div>
-
+    <h1>Scan to Connect</h1>
+    <canvas id="qrCode"></canvas>
     <script>
-        // Generate a unique session ID
-        const sessionId = Math.random().toString(36).substring(2); 
-
-        // Display the QR code with the session ID
+        const sessionId = Math.random().toString(36).substring(2); // Generate random session ID
         QRCode.toCanvas(document.getElementById('qrCode'), sessionId, function (error) {
-            if (error) console.error('QR Code error:', error);
+            if (error) console.error(error);
         });
 
-        // Establish a WebSocket connection
-        const ws = new WebSocket('wss://qr-authenticator.onrender.com:4001'); // Replace with your server address
-
-
+        const ws = new WebSocket('ws://your-server-address:4001'); // Replace with your server address
         ws.onopen = () => {
             console.log("WebSocket connected");
-            // Send session ID to server after connection is established
-            ws.send(sessionId);
+            ws.send(sessionId); // Send session ID to server when WebSocket is connected
         };
-
         ws.onmessage = (message) => {
             console.log('Message from server:', message.data);
-
-            const statusElement = document.getElementById('status');
-
-            // Handle different responses from the server
             if (message.data === 'authenticated') {
-                statusElement.textContent = 'Authenticated! Redirecting...';
-                setTimeout(() => {
-                    window.location.href = '/dashboard'; // Redirect to dashboard after authentication
-                }, 1000);
-            } else if (message.data === 'unauthorized') {
-                statusElement.textContent = 'Login failed. Please try again.';
-            } else if (message.data === 'invalid_session') {
-                statusElement.textContent = 'Invalid session. Please refresh the page.';
-            } else if (message.data === 'error') {
-                statusElement.textContent = 'An error occurred. Please try again later.';
+                alert('You are authenticated!');
+                // Redirect the user to a new page
+                window.location.href = '/dashboard'; // Redirect after authentication
             }
-        };
-
-        ws.onclose = () => {
-            const statusElement = document.getElementById('status');
-            statusElement.textContent = 'Connection closed. Please refresh the page to try again.';
         };
     </script>
 </body>

@@ -19,38 +19,24 @@
             const resultElement = document.getElementById('result');
 
             try {
+                // Get all available video devices (cameras)
                 const videoInputDevices = await codeReader.getVideoInputDevices();
                 
                 if (videoInputDevices.length === 0) {
                     throw new Error('No camera devices found.');
                 }
 
+                // Select the first available device or allow the user to choose
                 const selectedDeviceId = videoInputDevices.length > 1 ? videoInputDevices[1].deviceId : videoInputDevices[0].deviceId;
 
+                // Start the video stream from the selected device
                 await codeReader.decodeOnceFromVideoDevice(selectedDeviceId, 'video').then(result => {
                     resultElement.textContent = `QR Code detected: ${result.text}`;
                     console.log(result.text); // Process the scanned QR code here
 
-                    // WebSocket connection to send session ID
-                    const ws = new WebSocket('wss://qr-authenticator.onrender.com:4001'); // Ensure secure WebSocket
+                    // Redirect to Ayozat.com after scanning
+                    window.location.href = `https://ayozat.com?sessionId=${encodeURIComponent(result.text)}`;
 
-                    ws.onopen = () => {
-                        console.log("WebSocket connected");
-                        ws.send(result.text); // Send session ID to server
-                    };
-
-                    ws.onmessage = (message) => {
-                        console.log('Message from server:', message.data);
-                        if (message.data === 'authenticated') {
-                            alert('Login successful!');
-                            window.location.href = '/dashboard'; // Redirect to dashboard or other page
-                        } else if (message.data === 'unauthorized') {
-                            alert('Login failed!');
-                        } else if (message.data === 'invalid_session') {
-                            alert('Invalid session!');
-                        }
-                    };
-                    
                 }).catch(err => {
                     console.error('QR Code scan failed:', err);
                     resultElement.textContent = 'Failed to scan QR code or camera permission denied.';
