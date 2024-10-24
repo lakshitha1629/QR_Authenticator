@@ -30,13 +30,37 @@
                 const selectedDeviceId = videoInputDevices.length > 1 ? videoInputDevices[1].deviceId : videoInputDevices[0].deviceId;
 
                 // Start the video stream from the selected device
-                await codeReader.decodeOnceFromVideoDevice(selectedDeviceId, 'video').then(result => {
+                await codeReader.decodeOnceFromVideoDevice(selectedDeviceId, 'video').then(async result => {
                     resultElement.textContent = `QR Code detected: ${result.text}`;
                     console.log(result.text); // Process the scanned QR code here
 
-                    // Redirect to Ayozat.com after scanning
-                    window.location.href = `https://ayozat.com?sessionId=${encodeURIComponent(result.text)}`;
+                    // Here, we assume the QR code contains the sessionId. 
+                    // You may want to add a more complex logic depending on your QR code data format.
+                    const sessionId = result.text; // Use the QR code text as the session ID
 
+                    // Collect user credentials (prompt for email and password)
+                    const email = prompt("Enter your email:");
+                    const password = prompt("Enter your password:");
+
+                    // Open WebSocket connection
+                    const ws = new WebSocket('ws://your-server-address:4000'); // Replace with your server address
+
+                    ws.onopen = () => {
+                        console.log("WebSocket connected");
+                        // Send email, password, and session ID to the server
+                        ws.send(`${email}:${password}`);
+                    };
+
+                    ws.onmessage = (message) => {
+                        console.log('Message from server:', message.data);
+                        if (message.data === 'authenticated') {
+                            alert('You are authenticated!');
+                            // Redirect to the dashboard
+                            window.location.href = '/dashboard'; // Redirect after authentication
+                        } else {
+                            alert('Authentication failed. Please check your credentials.');
+                        }
+                    };
                 }).catch(err => {
                     console.error('QR Code scan failed:', err);
                     resultElement.textContent = 'Failed to scan QR code or camera permission denied.';
