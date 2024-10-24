@@ -3,31 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QR Code Connection</title>
+    <title>QR Code Login</title>
     <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 </head>
 <body>
-    <h1>Scan to Connect</h1>
-    <canvas id="qrCode"></canvas>
-    <script>
-        const sessionId = Math.random().toString(36).substring(2); // Generate random session ID
-        QRCode.toCanvas(document.getElementById('qrCode'), sessionId, function (error) {
-            if (error) console.error(error);
-        });
+    <h1>Login with QR Code</h1>
 
-        const ws = new WebSocket('ws://your-server-address:4001'); // Replace with your server address
-        ws.onopen = () => {
-            console.log("WebSocket connected");
-            ws.send(sessionId); // Send session ID to server when WebSocket is connected
-        };
-        ws.onmessage = (message) => {
-            console.log('Message from server:', message.data);
-            if (message.data === 'authenticated') {
-                alert('You are authenticated!');
-                // Redirect the user to a new page
-                window.location.href = '/dashboard'; // Redirect after authentication
-            }
-        };
+    <!-- Email and Password Input Fields -->
+    <form id="loginForm">
+        <input type="email" id="email" placeholder="Enter your email" required />
+        <input type="password" id="password" placeholder="Enter your password" required />
+        <button type="submit">Generate QR Code</button>
+    </form>
+
+    <canvas id="qrCode"></canvas>
+
+    <script>
+        const form = document.getElementById('loginForm');
+        form.addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            const userData = `${email}:${password}`; // Combine email and password
+
+            // Generate QR Code with email and password
+            QRCode.toCanvas(document.getElementById('qrCode'), userData, function (error) {
+                if (error) console.error(error);
+            });
+
+            const ws = new WebSocket('ws://your-server-address:4000'); // Update your WebSocket address
+            ws.onopen = () => {
+                console.log("WebSocket connected");
+                ws.send(userData); // Send email and password to server
+            };
+
+            ws.onmessage = (message) => {
+                console.log('Message from server:', message.data);
+                if (message.data === 'authenticated') {
+                    alert('You are authenticated!');
+                    window.location.href = '/dashboard'; // Redirect after authentication
+                }
+            };
+        });
     </script>
 </body>
 </html>
